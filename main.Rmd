@@ -1,0 +1,104 @@
+---
+title: "Convert FCS to CSV"
+output: html_notebook
+---
+
+# Modify the packages
+```{r}
+# modified from https://github.com/sydneycytometry/CSV-to-FCS/blob/master/FCS-to-CSV%20v2.0.R
+# edited by Xiaoxuan Yang
+
+# FCS to CSV
+    # Coverting .fcs file data into an .csv file
+    # Thomas Ashhurst
+    # 2017-09-13
+    # github.com/sydneycytometry
+    # .fcs file reading and writing adapted from https://gist.github.com/yannabraham/c1f9de9b23fb94105ca5
+
+
+##### USER INPUT #####
+    
+    # Install packages if required
+
+    if (!requireNamespace("BiocManager", quietly = TRUE))
+      install.packages("BiocManager")
+    BiocManager::install("Biobase", version = "3.8")
+    BiocManager::install("flowCore")
+    if(!require('data.table')) {install.packages('data.table')}
+    
+    # Load packages
+    library("flowCore")
+    library("Biobase")
+    library("data.table")
+```    
+
+# Find directory
+```{r}
+    
+install.packages("here")
+library(here)
+here::here()
+```
+
+# 
+```{r}
+
+FileNames <- list.files(path=here(), pattern = ".fcs") 
+as.matrix(FileNames) # See file names in a list
+    
+## Read data from Files into list of data frames
+DataList=list() # Creates and empty list to start 
+
+for (File in FileNames) { # Loop to read files into the list
+  tempdata <- exprs(read.FCS(File, transformation = FALSE))
+  tempdata <- tempdata[1:nrow(tempdata),1:ncol(tempdata)]
+  File <- gsub(".fcs", "", File)
+  DataList[[File]] <- tempdata
+}
+
+rm(tempdata)
+AllSampleNames <- names(DataList)
+    
+## Chech data quality
+head(DataList)   
+
+    
+```
+
+# End user input
+```{r}
+x <- Sys.time()
+x <- gsub(":", "-", x)
+x <- gsub(" ", "_", x)
+
+newdir <- paste0("Output_FCS-to-CSV", "_", x)
+
+setwd(here())
+dir.create(paste0(newdir), showWarnings = FALSE)
+setwd(newdir)
+
+for(i in c(1:length(AllSampleNames))){
+  data_subset <- DataList[i][[1]]
+  data_subset <- as.data.frame(data_subset)
+  colnames(data_subset)
+  dim(data_subset)
+  a <- names(DataList)[i]
+
+  write.csv(data_subset, paste0(a, ".csv"))
+}
+
+```
+
+#
+```{r}
+# adopted from https://github.com/madisonrmack/mc-normalize/blob/master/mc-normalize.R
+# edited by Xiaoxuan Yang
+install.packages("ggplot2")
+install.packages("RColorBrewer")
+library(ggplot2)
+library(RColorBrewer)
+
+
+
+```
+
