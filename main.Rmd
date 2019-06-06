@@ -18,31 +18,32 @@ output: html_notebook
 
 ##### USER INPUT #####
     
-    # Install packages if required
+# Install packages if required
 
-    if (!requireNamespace("BiocManager", quietly = TRUE))
-      install.packages("BiocManager")
-    BiocManager::install("Biobase", version = "3.8")
-    BiocManager::install("flowCore")
-    if(!require('data.table')) {install.packages('data.table')}
-    
-    # Load packages
-    library("flowCore")
-    library("Biobase")
-    library("data.table")
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+BiocManager::install("Biobase", version = "3.8")
+BiocManager::install("flowCore")
+if(!require('data.table')) {install.packages('data.table')}
+
+# Load packages
+library("flowCore")
+library("Biobase")
+library("data.table")
 ```    
 
 # Find directory
 ```{r}
-    
 install.packages("here")
 library(here)
 here::here()
+
+dirpath = "/Users/Chong/Desktop/untitled folder"
 ```
+
 
 # 
 ```{r}
-
 FileNames <- list.files(path=here(), pattern = ".fcs") 
 as.matrix(FileNames) # See file names in a list
     
@@ -61,8 +62,6 @@ AllSampleNames <- names(DataList)
     
 ## Chech data quality
 head(DataList)   
-
-    
 ```
 
 # End user input
@@ -86,10 +85,9 @@ for(i in c(1:length(AllSampleNames))){
 
   write.csv(data_subset, paste0(a, ".csv"))
 }
-
 ```
 
-#
+# Transform data
 ```{r}
 # adopted from https://github.com/madisonrmack/mc-normalize/blob/master/mc-normalize.R
 # edited by Xiaoxuan Yang
@@ -98,7 +96,47 @@ install.packages("RColorBrewer")
 library(ggplot2)
 library(RColorBrewer)
 
+blood <- read.csv(here("blood for 1305.csv"), header = T, row.names = 1)
+myeloid <- read.csv(here("1305 myeloid tumor.csv"), header = T, row.names = 1)
 
+# drop unnecessary rows
+drops <- c("Time", "Event_length")
+blood_d <- blood[!(colnames(blood) %in% drops)]
+myeloid_d <- myeloid[!(colnames(blood) %in% drops)]
+
+# transform to put events on the columns and channels as rows
+blood_dt <- t(blood_d)
+myeloid_dt <- t(myeloid_d)
+
+# create a row medians column for each channel
+blood_dt <- data.frame(blood_dt, medians = rowMedians(blood_dt, na.rm = TRUE))
+myeloid_dt <-data.frame(myeloid_dt, medians = rowMedians(myeloid_dt, na.rm = TRUE))
+```
+
+# Normalization Process - a ratio approach
+```{r}
+# Covert all 0's to 1.0 in order to avoid diving by zero -- this way all channels with 0 values will just not be normalized
+blood_dt[blood_dt == 0] <- 1.0
+myeloid_dt[myeloid_dt == 0] <- 1.0
+
+# 'nv' for normalization vector
+myeloid.nv <- rep(1, nrow(myeloid_dt))
+bloodnv <- (blood_dt$medians/myeloid_dt$medians) 
+
+# divide each event in the dt dataset by nv
+normed_myeloid <- myeloid_dt/myeloid.nv
+normed_blood <- blood_dt/blood.n
+
+
+# write file
+write.csv(normed_myeloid, "normalized samples.csv")
+write.csv(normed_blood, "normalized ctrl.csv")
+```
+
+# Normalize the experimental samples
+```{r}
 
 ```
+
+
 
