@@ -7,5 +7,3 @@ In this project, I want to help my friend convert FCS files to CSV and normalize
 ### Methods Used
 * File Conversion: `Biobase`, `flowCore`;
 * Data Manipulation: `data.table`;
-
-## Results
